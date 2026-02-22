@@ -17,57 +17,70 @@ app.get("/admin", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "admin.html"));
 });
 
+// Track users: socketId -> { name, socket }
+const users = new Map();
 let adminSocket = null;
-let chatSockets = new Set();
 
 io.on("connection", (socket) => {
   socket.on("register-admin", () => {
     adminSocket = socket;
-    console.log("Admin connected");
-    socket.emit("status", "You are now the operator.");
+    // Send current user list to admin
+    const userList = [];
+    for (const [id, u] of users) {
+      userList.push({ id, name: u.name });
+    }
+    socket.emit("user-list", userList);
   });
 
-  socket.on("register-chat", () => {
-    chatSockets.add(socket);
-    console.log("A victim connected");
+  socket.on("register-chat", (name) => {
+    users.set(socket.id, { name, socket });
     if (adminSocket) {
-      adminSocket.emit("victim-joined", chatSockets.size);
+      adminSocket.emit("user-joined", { id: socket.id, name });
     }
   });
 
-  // Friend sends a question
+  // User sends a message
   socket.on("user-message", (msg) => {
-    if (adminSocket) {
-      adminSocket.emit("user-message", msg);
+    const user = users.get(socket.id);
+    if (user && adminSocket) {
+      adminSocket.emit("user-message", {
+        userId: socket.id,
+        name: user.name,
+        text: msg,
+      });
     }
   });
 
-  // Admin sends a reply — relay to ALL chat users
-  socket.on("admin-reply", (msg) => {
-    for (const s of chatSockets) {
-      s.emit("ai-response", msg);
+  // Admin replies to a specific user
+  socket.on("admin-reply", ({ userId, text }) => {
+    const user = users.get(userId);
+    if (user) {
+      user.socket.emit("ai-response", text);
     }
   });
 
-  // Admin signals "typing" indicator
-  socket.on("admin-typing", () => {
-    for (const s of chatSockets) {
-      s.emit("ai-typing");
-    }
+  // Typing indicators per user
+  socket.on("admin-typing", (userId) => {
+    const user = users.get(userId);
+    if (user) user.socket.emit("ai-typing");
   });
 
-  socket.on("admin-stop-typing", () => {
-    for (const s of chatSockets) {
-      s.emit("ai-stop-typing");
-    }
+  socket.on("admin-stop-typing", (userId) => {
+    const user = users.get(userId);
+    if (user) user.socket.emit("ai-stop-typing");
   });
 
   socket.on("disconnect", () => {
     if (socket === adminSocket) {
       adminSocket = null;
-      console.log("Admin disconnected");
     }
-    chatSockets.delete(socket);
+    if (users.has(socket.id)) {
+      const name = users.get(socket.id).name;
+      users.delete(socket.id);
+      if (adminSocket) {
+        adminSocket.emit("user-left", { id: socket.id, name });
+      }
+    }
   });
 });
 

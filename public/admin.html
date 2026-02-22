@@ -4,29 +4,35 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Prank Control Panel</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🎮</text></svg>" />
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: #0a0a0a;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #09090b;
       color: #e0e0e0;
-      height: 100vh;
+      height: 100dvh;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
+    /* ── Header ── */
     .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 24px;
-      border-bottom: 1px solid #1e1e1e;
-      background: #111;
+      padding: 12px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      background: #0c0c0e;
+      flex-shrink: 0;
     }
 
     .header h1 {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
       color: #f43f5e;
       display: flex;
@@ -34,370 +40,664 @@
       gap: 8px;
     }
 
-    .status-badge {
-      font-size: 11px;
-      padding: 4px 10px;
+    .header-right { display: flex; align-items: center; gap: 10px; }
+
+    .online-count {
+      font-size: 12px;
+      padding: 4px 12px;
       border-radius: 20px;
       font-weight: 500;
-    }
-
-    .status-badge.connected {
-      background: #052e16;
+      background: rgba(74, 222, 128, 0.1);
       color: #4ade80;
-      border: 1px solid #166534;
+      border: 1px solid rgba(74, 222, 128, 0.2);
     }
 
-    .status-badge.waiting {
-      background: #1a1a00;
-      color: #facc15;
-      border: 1px solid #854d0e;
+    .online-count.zero {
+      background: rgba(255,255,255,0.04);
+      color: #555;
+      border-color: rgba(255,255,255,0.08);
     }
 
+    /* ── Main Layout ── */
     .main {
       display: flex;
       flex: 1;
       overflow: hidden;
     }
 
-    /* Left: incoming questions */
-    .questions-panel {
-      width: 50%;
-      border-right: 1px solid #1e1e1e;
+    /* ── Sidebar: User List ── */
+    .sidebar {
+      width: 260px;
+      border-right: 1px solid rgba(255,255,255,0.06);
       display: flex;
       flex-direction: column;
+      background: #0c0c0e;
+      flex-shrink: 0;
     }
 
-    .panel-title {
-      padding: 12px 20px;
-      font-size: 13px;
+    .sidebar-title {
+      padding: 14px 18px;
+      font-size: 11px;
       font-weight: 600;
-      color: #888;
+      color: #555;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      border-bottom: 1px solid #1e1e1e;
-      background: #0f0f0f;
+      letter-spacing: 1.2px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
     }
 
-    .questions-list {
+    .user-list {
       flex: 1;
       overflow-y: auto;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      padding: 8px;
     }
 
-    .question-card {
-      background: #161616;
-      border: 1px solid #2a2a2a;
+    .user-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
       border-radius: 10px;
-      padding: 12px 16px;
       cursor: pointer;
       transition: all 0.15s;
       position: relative;
     }
 
-    .question-card:hover { border-color: #f43f5e; }
-    .question-card.active {
-      border-color: #f43f5e;
-      background: #1a1118;
-    }
+    .user-item:hover { background: rgba(255,255,255,0.04); }
+    .user-item.active { background: rgba(244, 63, 94, 0.1); }
 
-    .question-card.answered {
-      opacity: 0.5;
-      border-color: #1e1e1e;
-    }
-
-    .question-card .time {
-      font-size: 11px;
-      color: #555;
-      margin-bottom: 4px;
-    }
-
-    .question-card .text {
-      font-size: 14px;
-      color: #ddd;
-      line-height: 1.4;
-    }
-
-    .question-card .badge-new {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      width: 8px;
-      height: 8px;
-      background: #f43f5e;
+    .user-avatar {
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
-    }
-
-    .no-questions {
+      background: rgba(255,255,255,0.08);
       display: flex;
       align-items: center;
       justify-content: center;
-      flex: 1;
-      color: #444;
-      font-size: 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #ccc;
+      flex-shrink: 0;
+      position: relative;
     }
 
-    /* Right: reply area */
-    .reply-panel {
-      width: 50%;
-      display: flex;
-      flex-direction: column;
+    .user-avatar .online-dot {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 10px;
+      height: 10px;
+      background: #4ade80;
+      border-radius: 50%;
+      border: 2px solid #0c0c0e;
     }
 
-    .current-question {
-      padding: 16px 20px;
-      border-bottom: 1px solid #1e1e1e;
-      background: #0f0f0f;
-      min-height: 80px;
+    .user-info { flex: 1; min-width: 0; }
+
+    .user-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: #ddd;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .current-question .label {
+    .user-preview {
       font-size: 11px;
-      color: #666;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 6px;
+      color: #555;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
     }
 
-    .current-question .q-text {
-      font-size: 15px;
-      color: #eee;
-      line-height: 1.5;
+    .unread-badge {
+      min-width: 18px;
+      height: 18px;
+      background: #f43f5e;
+      color: #fff;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 5px;
+      flex-shrink: 0;
     }
 
-    .current-question .empty {
-      color: #444;
-      font-size: 14px;
-      font-style: italic;
+    .unread-badge.hidden { display: none; }
+
+    .no-users {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      color: #333;
+      font-size: 13px;
+      gap: 8px;
+      padding: 20px;
+      text-align: center;
     }
 
-    .reply-area {
+    .no-users span { font-size: 28px; }
+
+    /* ── Chat Panel ── */
+    .chat-panel {
       flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 16px;
-      gap: 12px;
+      background: #09090b;
     }
 
-    .reply-area textarea {
-      flex: 1;
-      background: #141414;
-      border: 1px solid #2a2a2a;
-      border-radius: 12px;
-      padding: 14px 16px;
-      color: #eee;
+    /* Chat header */
+    .chat-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #0c0c0e;
+      flex-shrink: 0;
+    }
+
+    .chat-header .ch-name {
       font-size: 14px;
+      font-weight: 600;
+      color: #eee;
+    }
+
+    .chat-header .ch-status {
+      font-size: 11px;
+      color: #4ade80;
+    }
+
+    .empty-chat-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-size: 13px;
+      color: #444;
+      background: #0c0c0e;
+      flex-shrink: 0;
+    }
+
+    /* Messages */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .msg {
+      max-width: 75%;
+      padding: 10px 14px;
+      border-radius: 16px;
+      font-size: 13.5px;
+      line-height: 1.5;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg.from-user {
+      align-self: flex-start;
+      background: rgba(255,255,255,0.06);
+      color: #ddd;
+      border-bottom-left-radius: 4px;
+    }
+
+    .msg.from-admin {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #6c5ce7, #7c3aed);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg .msg-time {
+      font-size: 10px;
+      opacity: 0.5;
+      margin-top: 4px;
+    }
+
+    .msg.from-user .msg-time { text-align: left; }
+    .msg.from-admin .msg-time { text-align: right; }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      color: #2a2a2a;
+      font-size: 14px;
+      gap: 8px;
+    }
+
+    .empty-state span { font-size: 36px; }
+
+    /* Reply area */
+    .reply-area {
+      padding: 12px 16px 16px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+
+    .quick-replies {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .quick-reply {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 5px 11px;
+      font-size: 11px;
+      color: #777;
+      cursor: pointer;
+      transition: all 0.15s;
       font-family: inherit;
-      line-height: 1.6;
+    }
+
+    .quick-reply:hover {
+      border-color: rgba(244, 63, 94, 0.4);
+      color: #ccc;
+    }
+
+    .reply-input-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .reply-input-row textarea {
+      flex: 1;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 12px 16px;
+      color: #eee;
+      font-size: 13.5px;
+      font-family: inherit;
+      line-height: 1.5;
       resize: none;
       outline: none;
+      max-height: 120px;
       transition: border-color 0.2s;
     }
 
-    .reply-area textarea:focus { border-color: #f43f5e; }
-    .reply-area textarea::placeholder { color: #444; }
-
-    .reply-actions {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
+    .reply-input-row textarea:focus { border-color: rgba(244, 63, 94, 0.5); }
+    .reply-input-row textarea::placeholder { color: #444; }
+    .reply-input-row textarea:disabled { opacity: 0.3; }
 
     .send-reply {
-      padding: 10px 24px;
+      height: 44px;
+      padding: 0 20px;
       background: #f43f5e;
       color: #fff;
       border: none;
-      border-radius: 10px;
-      font-size: 14px;
+      border-radius: 12px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       transition: background 0.2s;
+      font-family: inherit;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
 
     .send-reply:hover { background: #e11d48; }
     .send-reply:disabled { background: #333; cursor: not-allowed; }
 
-    .hint {
-      font-size: 12px;
-      color: #555;
+    .reply-hint {
+      font-size: 11px;
+      color: #333;
+      margin-top: 6px;
+      text-align: center;
     }
 
-    /* Quick replies */
-    .quick-replies {
+    /* ── Toast Notification ── */
+    .toast-container {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 1000;
       display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 8px;
     }
 
-    .quick-reply {
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
-      border-radius: 8px;
-      padding: 6px 12px;
-      font-size: 12px;
-      color: #aaa;
+    .toast {
+      background: #1a1a1e;
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideIn 0.3s ease, fadeOut 0.3s ease 3s forwards;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
       cursor: pointer;
-      transition: all 0.15s;
     }
 
-    .quick-reply:hover {
-      border-color: #f43f5e;
-      color: #eee;
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(60px); }
+      to { opacity: 1; transform: translateX(0); }
     }
 
-    /* Sound ping */
-    .ping { animation: ping 0.5s ease; }
-
-    @keyframes ping {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.02); }
-      100% { transform: scale(1); }
+    @keyframes fadeOut {
+      to { opacity: 0; transform: translateX(60px); }
     }
 
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 6px; }
+    .toast-dot {
+      width: 8px;
+      height: 8px;
+      background: #f43f5e;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .toast-text {
+      font-size: 13px;
+      color: #ddd;
+    }
+
+    .toast-text strong { color: #f43f5e; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 3px; }
+
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      .sidebar { width: 70px; }
+      .user-info, .sidebar-title { display: none; }
+      .user-item { justify-content: center; padding: 10px 6px; }
+      .unread-badge {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        min-width: 14px;
+        height: 14px;
+        font-size: 8px;
+      }
+    }
   </style>
 </head>
 <body>
+
   <div class="header">
-    <h1>
-      <span style="font-size: 20px;">&#127917;</span>
-      Prank Control Panel
-    </h1>
-    <span class="status-badge waiting" id="statusBadge">Waiting for victim...</span>
+    <h1>Prank Control Panel</h1>
+    <div class="header-right">
+      <div class="online-count zero" id="onlineCount">0 online</div>
+    </div>
   </div>
 
   <div class="main">
-    <div class="questions-panel">
-      <div class="panel-title">Incoming Questions</div>
-      <div class="questions-list" id="questionsList">
-        <div class="no-questions" id="noQuestions">No questions yet... share the link with your friend!</div>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-title">Victims</div>
+      <div class="user-list" id="userList">
+        <div class="no-users" id="noUsers">
+          <span>&#128373;</span>
+          Waiting for victims to connect...
+        </div>
       </div>
     </div>
 
-    <div class="reply-panel">
-      <div class="current-question" id="currentQuestion">
-        <div class="label">Replying to</div>
-        <div class="empty">Click a question to reply</div>
+    <!-- Chat Panel -->
+    <div class="chat-panel">
+      <div class="empty-chat-header" id="chatHeader">Select a victim to start replying</div>
+
+      <div class="messages" id="messagesArea">
+        <div class="empty-state" id="emptyState">
+          <span>&#128172;</span>
+          Select a victim from the sidebar
+        </div>
       </div>
 
       <div class="reply-area">
         <div class="quick-replies">
-          <div class="quick-reply" onclick="useQuick(this)">Hmm, let me think about that...</div>
-          <div class="quick-reply" onclick="useQuick(this)">That's a great question!</div>
-          <div class="quick-reply" onclick="useQuick(this)">I don't have access to real-time data.</div>
-          <div class="quick-reply" onclick="useQuick(this)">Based on my training data...</div>
-          <div class="quick-reply" onclick="useQuick(this)">I'd be happy to help with that!</div>
+          <button class="quick-reply" onclick="useQuick(this)">That's a great question!</button>
+          <button class="quick-reply" onclick="useQuick(this)">Let me think about that...</button>
+          <button class="quick-reply" onclick="useQuick(this)">Based on my training data...</button>
+          <button class="quick-reply" onclick="useQuick(this)">I'd be happy to help!</button>
+          <button class="quick-reply" onclick="useQuick(this)">I don't have access to real-time data.</button>
+          <button class="quick-reply" onclick="useQuick(this)">As an AI language model...</button>
         </div>
-
-        <textarea id="replyInput" placeholder="Type your 'AI' response here..." disabled></textarea>
-
-        <div class="reply-actions">
-          <button class="send-reply" id="sendReply" onclick="sendReply()" disabled>
-            Send as AI &nbsp; &#9889;
-          </button>
-          <span class="hint">Enter to send &bull; Shift+Enter for new line</span>
+        <div class="reply-input-row">
+          <textarea id="replyInput" rows="1" placeholder="Type your 'AI' response..." disabled></textarea>
+          <button class="send-reply" id="sendReply" onclick="sendReply()" disabled>Send</button>
         </div>
+        <div class="reply-hint">Enter to send &bull; Shift+Enter for new line</div>
       </div>
     </div>
   </div>
+
+  <div class="toast-container" id="toastContainer"></div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
     socket.emit("register-admin");
 
-    const questionsList = document.getElementById("questionsList");
-    const noQuestions = document.getElementById("noQuestions");
-    const currentQuestion = document.getElementById("currentQuestion");
+    const userListEl = document.getElementById("userList");
+    const noUsers = document.getElementById("noUsers");
+    const chatHeader = document.getElementById("chatHeader");
+    const messagesArea = document.getElementById("messagesArea");
+    const emptyState = document.getElementById("emptyState");
     const replyInput = document.getElementById("replyInput");
     const sendReplyBtn = document.getElementById("sendReply");
-    const statusBadge = document.getElementById("statusBadge");
+    const onlineCount = document.getElementById("onlineCount");
+    const toastContainer = document.getElementById("toastContainer");
 
-    let questions = [];
-    let activeIndex = -1;
+    // State
+    // users: Map<id, { name, messages: [{role, text, time}], unread }>
+    const users = new Map();
+    let activeUserId = null;
     let typingTimeout = null;
 
-    // Notification sound (subtle beep)
-    function playNotification() {
+    // Audio notification
+    function playSound() {
       try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.frequency.value = 800;
-        gain.gain.value = 0.1;
+        osc.frequency.value = 880;
+        osc.type = "sine";
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
         osc.start();
-        osc.stop(ctx.currentTime + 0.15);
+        osc.stop(ctx.currentTime + 0.3);
       } catch (e) {}
     }
 
-    socket.on("victim-joined", (count) => {
-      statusBadge.textContent = `${count} victim${count > 1 ? "s" : ""} connected`;
-      statusBadge.className = "status-badge connected";
-    });
-
-    socket.on("user-message", (msg) => {
-      noQuestions.style.display = "none";
-      const q = { text: msg, time: new Date(), answered: false };
-      questions.push(q);
-      renderQuestions();
-      playNotification();
-
-      // Auto-select the newest question
-      selectQuestion(questions.length - 1);
-    });
-
-    function renderQuestions() {
-      // Clear and re-render
-      questionsList.innerHTML = "";
-      questions.forEach((q, i) => {
-        const card = document.createElement("div");
-        card.className = `question-card${i === activeIndex ? " active" : ""}${q.answered ? " answered" : ""}`;
-        card.onclick = () => selectQuestion(i);
-
-        const timeStr = q.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-        card.innerHTML = `
-          <div class="time">${timeStr}</div>
-          <div class="text">${escapeHtml(q.text)}</div>
-          ${!q.answered ? '<div class="badge-new"></div>' : ""}
-        `;
-
-        questionsList.appendChild(card);
-      });
-
-      questionsList.scrollTop = questionsList.scrollHeight;
+    function showToast(name, text) {
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      const preview = text.length > 50 ? text.slice(0, 50) + "..." : text;
+      toast.innerHTML = `
+        <div class="toast-dot"></div>
+        <div class="toast-text"><strong>${esc(name)}</strong>: ${esc(preview)}</div>
+      `;
+      toastContainer.appendChild(toast);
+      setTimeout(() => toast.remove(), 3500);
     }
 
-    function selectQuestion(index) {
-      activeIndex = index;
-      const q = questions[index];
+    function updateOnlineCount() {
+      const count = users.size;
+      onlineCount.textContent = `${count} online`;
+      onlineCount.className = count > 0 ? "online-count" : "online-count zero";
+    }
 
-      currentQuestion.innerHTML = `
-        <div class="label">Replying to</div>
-        <div class="q-text">${escapeHtml(q.text)}</div>
-      `;
+    // ── Socket Events ──
 
+    socket.on("user-list", (list) => {
+      list.forEach(u => {
+        users.set(u.id, { name: u.name, messages: [], unread: 0 });
+      });
+      renderUserList();
+      updateOnlineCount();
+    });
+
+    socket.on("user-joined", ({ id, name }) => {
+      users.set(id, { name, messages: [], unread: 0 });
+      renderUserList();
+      updateOnlineCount();
+      showToast(name, "just connected");
+      playSound();
+    });
+
+    socket.on("user-left", ({ id, name }) => {
+      users.delete(id);
+      if (activeUserId === id) {
+        activeUserId = null;
+        renderChat();
+      }
+      renderUserList();
+      updateOnlineCount();
+    });
+
+    socket.on("user-message", ({ userId, name, text }) => {
+      const user = users.get(userId);
+      if (!user) return;
+
+      user.messages.push({
+        role: "user",
+        text,
+        time: new Date(),
+      });
+
+      if (userId !== activeUserId) {
+        user.unread++;
+      }
+
+      renderUserList();
+      playSound();
+      showToast(name, text);
+
+      if (userId === activeUserId) {
+        renderChat();
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+      }
+    });
+
+    // ── Render ──
+
+    function renderUserList() {
+      const hasUsers = users.size > 0;
+      noUsers.style.display = hasUsers ? "none" : "flex";
+
+      // Remove old items (keep noUsers)
+      userListEl.querySelectorAll(".user-item").forEach(el => el.remove());
+
+      for (const [id, user] of users) {
+        const item = document.createElement("div");
+        item.className = `user-item${id === activeUserId ? " active" : ""}`;
+        item.onclick = () => selectUser(id);
+
+        const lastMsg = user.messages.length > 0
+          ? user.messages[user.messages.length - 1].text
+          : "No messages yet";
+
+        const preview = lastMsg.length > 30 ? lastMsg.slice(0, 30) + "..." : lastMsg;
+
+        item.innerHTML = `
+          <div class="user-avatar">
+            ${esc(user.name.charAt(0).toUpperCase())}
+            <div class="online-dot"></div>
+          </div>
+          <div class="user-info">
+            <div class="user-name">${esc(user.name)}</div>
+            <div class="user-preview">${esc(preview)}</div>
+          </div>
+          <div class="unread-badge${user.unread > 0 ? "" : " hidden"}">${user.unread}</div>
+        `;
+
+        userListEl.appendChild(item);
+      }
+    }
+
+    function selectUser(id) {
+      activeUserId = id;
+      const user = users.get(id);
+      if (user) {
+        user.unread = 0;
+      }
       replyInput.disabled = false;
       sendReplyBtn.disabled = false;
       replyInput.focus();
-      renderQuestions();
+      renderUserList();
+      renderChat();
     }
 
-    // Send typing indicator as user types
+    function renderChat() {
+      if (!activeUserId || !users.has(activeUserId)) {
+        chatHeader.innerHTML = `<div class="empty-chat-header">Select a victim to start replying</div>`;
+        messagesArea.innerHTML = `<div class="empty-state"><span>&#128172;</span>Select a victim from the sidebar</div>`;
+        replyInput.disabled = true;
+        sendReplyBtn.disabled = true;
+        return;
+      }
+
+      const user = users.get(activeUserId);
+
+      chatHeader.innerHTML = `
+        <div class="chat-header">
+          <div class="user-avatar" style="width:30px;height:30px;font-size:12px;">
+            ${esc(user.name.charAt(0).toUpperCase())}
+            <div class="online-dot"></div>
+          </div>
+          <div>
+            <div class="ch-name">${esc(user.name)}</div>
+            <div class="ch-status">Online</div>
+          </div>
+        </div>
+      `;
+
+      if (user.messages.length === 0) {
+        messagesArea.innerHTML = `<div class="empty-state"><span>&#9203;</span>Waiting for ${esc(user.name)} to ask something...</div>`;
+        return;
+      }
+
+      messagesArea.innerHTML = "";
+      user.messages.forEach(m => {
+        const div = document.createElement("div");
+        div.className = `msg ${m.role === "user" ? "from-user" : "from-admin"}`;
+        const timeStr = m.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        div.innerHTML = `${esc(m.text).replace(/\n/g, "<br>")}<div class="msg-time">${timeStr}</div>`;
+        messagesArea.appendChild(div);
+      });
+
+      messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
+
+    // ── Reply ──
+
     replyInput.addEventListener("input", () => {
-      socket.emit("admin-typing");
-      clearTimeout(typingTimeout);
-      typingTimeout = setTimeout(() => {
-        socket.emit("admin-stop-typing");
-      }, 1500);
+      // Auto resize
+      replyInput.style.height = "auto";
+      replyInput.style.height = Math.min(replyInput.scrollHeight, 120) + "px";
+
+      if (activeUserId) {
+        socket.emit("admin-typing", activeUserId);
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+          socket.emit("admin-stop-typing", activeUserId);
+        }, 1500);
+      }
     });
 
     replyInput.addEventListener("keydown", (e) => {
@@ -409,28 +709,33 @@
 
     function sendReply() {
       const text = replyInput.value.trim();
-      if (!text || activeIndex === -1) return;
+      if (!text || !activeUserId) return;
 
-      socket.emit("admin-stop-typing");
-      socket.emit("admin-reply", text);
+      socket.emit("admin-stop-typing", activeUserId);
+      socket.emit("admin-reply", { userId: activeUserId, text });
 
-      questions[activeIndex].answered = true;
-      replyInput.value = "";
-      renderQuestions();
-
-      // Auto-select next unanswered question
-      const next = questions.findIndex((q, i) => !q.answered && i > activeIndex);
-      if (next !== -1) {
-        selectQuestion(next);
+      const user = users.get(activeUserId);
+      if (user) {
+        user.messages.push({
+          role: "admin",
+          text,
+          time: new Date(),
+        });
       }
+
+      replyInput.value = "";
+      replyInput.style.height = "auto";
+      renderUserList();
+      renderChat();
     }
 
     function useQuick(el) {
       replyInput.value = el.textContent;
+      replyInput.disabled = false;
       replyInput.focus();
     }
 
-    function escapeHtml(str) {
+    function esc(str) {
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
   </script>
