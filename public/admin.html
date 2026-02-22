@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prank Control Panel</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      border-bottom: 1px solid #1e1e1e;
+      background: #111;
+    }
+
+    .header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #f43f5e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-badge {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    .status-badge.connected {
+      background: #052e16;
+      color: #4ade80;
+      border: 1px solid #166534;
+    }
+
+    .status-badge.waiting {
+      background: #1a1a00;
+      color: #facc15;
+      border: 1px solid #854d0e;
+    }
+
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Left: incoming questions */
+    .questions-panel {
+      width: 50%;
+      border-right: 1px solid #1e1e1e;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-title {
+      padding: 12px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid #1e1e1e;
+      background: #0f0f0f;
+    }
+
+    .questions-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .question-card {
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    .question-card:hover { border-color: #f43f5e; }
+    .question-card.active {
+      border-color: #f43f5e;
+      background: #1a1118;
+    }
+
+    .question-card.answered {
+      opacity: 0.5;
+      border-color: #1e1e1e;
+    }
+
+    .question-card .time {
+      font-size: 11px;
+      color: #555;
+      margin-bottom: 4px;
+    }
+
+    .question-card .text {
+      font-size: 14px;
+      color: #ddd;
+      line-height: 1.4;
+    }
+
+    .question-card .badge-new {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 8px;
+      height: 8px;
+      background: #f43f5e;
+      border-radius: 50%;
+    }
+
+    .no-questions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      color: #444;
+      font-size: 14px;
+    }
+
+    /* Right: reply area */
+    .reply-panel {
+      width: 50%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .current-question {
+      padding: 16px 20px;
+      border-bottom: 1px solid #1e1e1e;
+      background: #0f0f0f;
+      min-height: 80px;
+    }
+
+    .current-question .label {
+      font-size: 11px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .current-question .q-text {
+      font-size: 15px;
+      color: #eee;
+      line-height: 1.5;
+    }
+
+    .current-question .empty {
+      color: #444;
+      font-size: 14px;
+      font-style: italic;
+    }
+
+    .reply-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      gap: 12px;
+    }
+
+    .reply-area textarea {
+      flex: 1;
+      background: #141414;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 14px 16px;
+      color: #eee;
+      font-size: 14px;
+      font-family: inherit;
+      line-height: 1.6;
+      resize: none;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .reply-area textarea:focus { border-color: #f43f5e; }
+    .reply-area textarea::placeholder { color: #444; }
+
+    .reply-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .send-reply {
+      padding: 10px 24px;
+      background: #f43f5e;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .send-reply:hover { background: #e11d48; }
+    .send-reply:disabled { background: #333; cursor: not-allowed; }
+
+    .hint {
+      font-size: 12px;
+      color: #555;
+    }
+
+    /* Quick replies */
+    .quick-replies {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .quick-reply {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: #aaa;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .quick-reply:hover {
+      border-color: #f43f5e;
+      color: #eee;
+    }
+
+    /* Sound ping */
+    .ping { animation: ping 0.5s ease; }
+
+    @keyframes ping {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>
+      <span style="font-size: 20px;">&#127917;</span>
+      Prank Control Panel
+    </h1>
+    <span class="status-badge waiting" id="statusBadge">Waiting for victim...</span>
+  </div>
+
+  <div class="main">
+    <div class="questions-panel">
+      <div class="panel-title">Incoming Questions</div>
+      <div class="questions-list" id="questionsList">
+        <div class="no-questions" id="noQuestions">No questions yet... share the link with your friend!</div>
+      </div>
+    </div>
+
+    <div class="reply-panel">
+      <div class="current-question" id="currentQuestion">
+        <div class="label">Replying to</div>
+        <div class="empty">Click a question to reply</div>
+      </div>
+
+      <div class="reply-area">
+        <div class="quick-replies">
+          <div class="quick-reply" onclick="useQuick(this)">Hmm, let me think about that...</div>
+          <div class="quick-reply" onclick="useQuick(this)">That's a great question!</div>
+          <div class="quick-reply" onclick="useQuick(this)">I don't have access to real-time data.</div>
+          <div class="quick-reply" onclick="useQuick(this)">Based on my training data...</div>
+          <div class="quick-reply" onclick="useQuick(this)">I'd be happy to help with that!</div>
+        </div>
+
+        <textarea id="replyInput" placeholder="Type your 'AI' response here..." disabled></textarea>
+
+        <div class="reply-actions">
+          <button class="send-reply" id="sendReply" onclick="sendReply()" disabled>
+            Send as AI &nbsp; &#9889;
+          </button>
+          <span class="hint">Enter to send &bull; Shift+Enter for new line</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    socket.emit("register-admin");
+
+    const questionsList = document.getElementById("questionsList");
+    const noQuestions = document.getElementById("noQuestions");
+    const currentQuestion = document.getElementById("currentQuestion");
+    const replyInput = document.getElementById("replyInput");
+    const sendReplyBtn = document.getElementById("sendReply");
+    const statusBadge = document.getElementById("statusBadge");
+
+    let questions = [];
+    let activeIndex = -1;
+    let typingTimeout = null;
+
+    // Notification sound (subtle beep)
+    function playNotification() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 800;
+        gain.gain.value = 0.1;
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+      } catch (e) {}
+    }
+
+    socket.on("victim-joined", (count) => {
+      statusBadge.textContent = `${count} victim${count > 1 ? "s" : ""} connected`;
+      statusBadge.className = "status-badge connected";
+    });
+
+    socket.on("user-message", (msg) => {
+      noQuestions.style.display = "none";
+      const q = { text: msg, time: new Date(), answered: false };
+      questions.push(q);
+      renderQuestions();
+      playNotification();
+
+      // Auto-select the newest question
+      selectQuestion(questions.length - 1);
+    });
+
+    function renderQuestions() {
+      // Clear and re-render
+      questionsList.innerHTML = "";
+      questions.forEach((q, i) => {
+        const card = document.createElement("div");
+        card.className = `question-card${i === activeIndex ? " active" : ""}${q.answered ? " answered" : ""}`;
+        card.onclick = () => selectQuestion(i);
+
+        const timeStr = q.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+        card.innerHTML = `
+          <div class="time">${timeStr}</div>
+          <div class="text">${escapeHtml(q.text)}</div>
+          ${!q.answered ? '<div class="badge-new"></div>' : ""}
+        `;
+
+        questionsList.appendChild(card);
+      });
+
+      questionsList.scrollTop = questionsList.scrollHeight;
+    }
+
+    function selectQuestion(index) {
+      activeIndex = index;
+      const q = questions[index];
+
+      currentQuestion.innerHTML = `
+        <div class="label">Replying to</div>
+        <div class="q-text">${escapeHtml(q.text)}</div>
+      `;
+
+      replyInput.disabled = false;
+      sendReplyBtn.disabled = false;
+      replyInput.focus();
+      renderQuestions();
+    }
+
+    // Send typing indicator as user types
+    replyInput.addEventListener("input", () => {
+      socket.emit("admin-typing");
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        socket.emit("admin-stop-typing");
+      }, 1500);
+    });
+
+    replyInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendReply();
+      }
+    });
+
+    function sendReply() {
+      const text = replyInput.value.trim();
+      if (!text || activeIndex === -1) return;
+
+      socket.emit("admin-stop-typing");
+      socket.emit("admin-reply", text);
+
+      questions[activeIndex].answered = true;
+      replyInput.value = "";
+      renderQuestions();
+
+      // Auto-select next unanswered question
+      const next = questions.findIndex((q, i) => !q.answered && i > activeIndex);
+      if (next !== -1) {
+        selectQuestion(next);
+      }
+    }
+
+    function useQuick(el) {
+      replyInput.value = el.textContent;
+      replyInput.focus();
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+  </script>
+</body>
+</html>

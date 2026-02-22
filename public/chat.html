@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NexusAI</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 24px;
+      border-bottom: 1px solid #1e1e1e;
+      background: #0f0f0f;
+    }
+
+    .header .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #6c5ce7, #a855f7, #ec4899);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    .model-badge {
+      font-size: 11px;
+      background: #1e1e1e;
+      color: #888;
+      padding: 3px 10px;
+      border-radius: 12px;
+      margin-left: 8px;
+      font-weight: 400;
+    }
+
+    /* Chat area */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Welcome screen */
+    .welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 12px;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .welcome h1 {
+      font-size: 32px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #6c5ce7, #a855f7, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .welcome p {
+      color: #666;
+      font-size: 15px;
+      max-width: 500px;
+    }
+
+    .suggestions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 20px;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .suggestion {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 13px;
+      color: #aaa;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+    }
+
+    .suggestion:hover {
+      border-color: #6c5ce7;
+      color: #ddd;
+      background: #1e1a2e;
+    }
+
+    /* Messages */
+    .message {
+      display: flex;
+      gap: 14px;
+      line-height: 1.6;
+      font-size: 15px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .message.user .avatar {
+      background: #2a2a2a;
+      color: #ccc;
+    }
+
+    .message.ai .avatar {
+      background: linear-gradient(135deg, #6c5ce7, #a855f7);
+      color: #fff;
+    }
+
+    .message .content {
+      flex: 1;
+      padding-top: 4px;
+    }
+
+    .message.user .content { color: #eee; }
+    .message.ai .content { color: #d0d0d0; }
+
+    /* Typing indicator */
+    .typing-indicator {
+      display: none;
+      gap: 14px;
+      align-items: flex-start;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .typing-indicator.visible { display: flex; }
+
+    .typing-dots {
+      display: flex;
+      gap: 4px;
+      padding-top: 10px;
+    }
+
+    .typing-dots span {
+      width: 7px;
+      height: 7px;
+      background: #6c5ce7;
+      border-radius: 50%;
+      animation: bounce 1.4s ease-in-out infinite;
+    }
+
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-8px); }
+    }
+
+    /* Input area */
+    .input-area {
+      padding: 16px 24px 24px;
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .input-wrapper {
+      display: flex;
+      align-items: flex-end;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 8px 12px;
+      transition: border-color 0.2s;
+    }
+
+    .input-wrapper:focus-within {
+      border-color: #6c5ce7;
+    }
+
+    .input-wrapper textarea {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      color: #eee;
+      font-size: 15px;
+      font-family: inherit;
+      resize: none;
+      max-height: 150px;
+      padding: 8px 4px;
+      line-height: 1.5;
+    }
+
+    .input-wrapper textarea::placeholder { color: #555; }
+
+    .send-btn {
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: #6c5ce7;
+      color: #fff;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .send-btn:hover { background: #5a4bd1; }
+    .send-btn:disabled { background: #333; cursor: not-allowed; }
+
+    .send-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 11px;
+      color: #444;
+      margin-top: 8px;
+    }
+
+    /* Scrollbar */
+    .chat-area::-webkit-scrollbar { width: 6px; }
+    .chat-area::-webkit-scrollbar-track { background: transparent; }
+    .chat-area::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">N</div>
+      NexusAI
+      <span class="model-badge">Nexus Pro 2.5</span>
+    </div>
+  </div>
+
+  <div class="chat-area" id="chatArea">
+    <div class="welcome" id="welcome">
+      <h1>What can I help with?</h1>
+      <p>I'm NexusAI, a next-generation reasoning model. Ask me anything and I'll do my best to help.</p>
+      <div class="suggestions">
+        <div class="suggestion" onclick="useSuggestion(this)">Explain quantum computing in simple terms</div>
+        <div class="suggestion" onclick="useSuggestion(this)">Write a Python script to sort files</div>
+        <div class="suggestion" onclick="useSuggestion(this)">Help me write a professional email</div>
+        <div class="suggestion" onclick="useSuggestion(this)">What are the latest AI trends?</div>
+      </div>
+    </div>
+
+    <div class="typing-indicator" id="typingIndicator">
+      <div class="avatar" style="background: linear-gradient(135deg, #6c5ce7, #a855f7); color: #fff;">N</div>
+      <div class="typing-dots">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-wrapper">
+      <textarea id="userInput" rows="1" placeholder="Ask NexusAI anything..." autofocus></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </div>
+    <div class="footer-note">NexusAI can make mistakes. Consider checking important information.</div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    socket.emit("register-chat");
+
+    const chatArea = document.getElementById("chatArea");
+    const welcome = document.getElementById("welcome");
+    const typingIndicator = document.getElementById("typingIndicator");
+    const userInput = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    let firstMessage = true;
+
+    // Auto-resize textarea
+    userInput.addEventListener("input", () => {
+      userInput.style.height = "auto";
+      userInput.style.height = userInput.scrollHeight + "px";
+    });
+
+    userInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    function useSuggestion(el) {
+      userInput.value = el.textContent;
+      sendMessage();
+    }
+
+    function sendMessage() {
+      const msg = userInput.value.trim();
+      if (!msg) return;
+
+      if (firstMessage) {
+        welcome.style.display = "none";
+        firstMessage = false;
+      }
+
+      addMessage("user", msg);
+      socket.emit("user-message", msg);
+
+      userInput.value = "";
+      userInput.style.height = "auto";
+      sendBtn.disabled = true;
+
+      // Show typing after a small delay to feel natural
+      setTimeout(() => {
+        typingIndicator.classList.add("visible");
+        scrollToBottom();
+      }, 400);
+    }
+
+    socket.on("ai-response", (msg) => {
+      typingIndicator.classList.remove("visible");
+      addMessage("ai", msg);
+      sendBtn.disabled = false;
+    });
+
+    socket.on("ai-typing", () => {
+      typingIndicator.classList.add("visible");
+      scrollToBottom();
+    });
+
+    socket.on("ai-stop-typing", () => {
+      typingIndicator.classList.remove("visible");
+    });
+
+    function addMessage(role, text) {
+      const div = document.createElement("div");
+      div.className = `message ${role}`;
+
+      const avatarLabel = role === "user" ? "Y" : "N";
+
+      // Basic markdown-ish rendering: **bold**, `code`, newlines
+      let html = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+        .replace(/`([^`]+)`/g, "<code style='background:#2a2a2a;padding:2px 6px;border-radius:4px;font-size:13px;'>$1</code>")
+        .replace(/\n/g, "<br>");
+
+      div.innerHTML = `
+        <div class="avatar">${avatarLabel}</div>
+        <div class="content">${html}</div>
+      `;
+
+      chatArea.insertBefore(div, typingIndicator);
+      scrollToBottom();
+    }
+
+    function scrollToBottom() {
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+  </script>
+</body>
+</html>
